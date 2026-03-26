@@ -3,165 +3,165 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import databaseService from '../services/database';
 import { Query } from 'appwrite';
-import { Loader, Filter, AlertCircle } from 'lucide-react';
+import { ArrowRight, PackageSearch } from 'lucide-react';
+
+const CATEGORIES = [
+  { id: 'all',       name: 'All' },
+  { id: 'phones',    name: 'Phones' },
+  { id: 'laptops',   name: 'Laptops' },
+  { id: 'audio',     name: 'Audio' },
+  { id: 'wearables', name: 'Wearables' },
+  { id: 'cameras',   name: 'Cameras' },
+];
+
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden border border-stone-100">
+      <div className="skeleton aspect-4/3" />
+      <div className="p-5 space-y-2">
+        <div className="skeleton h-3 w-1/4" />
+        <div className="skeleton h-4 w-3/4" />
+        <div className="skeleton h-5 w-1/3 mt-3" />
+      </div>
+    </div>
+  );
+}
 
 function AllProducts() {
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedCategory, setSelectedCategory] = useState('all');
+  const [products,          setProducts]          = useState([]);
+  const [loading,           setLoading]           = useState(true);
+  const [selectedCategory,  setSelectedCategory]  = useState('all');
 
-    const categories = [
-        { id: 'all', name: 'All Products' },
-        { id: 'phones', name: 'Phones' },
-        { id: 'laptops', name: 'Laptops' },
-        { id: 'audio', name: 'Audio' },
-        { id: 'wearables', name: 'Wearables' },
-        { id: 'cameras', name: 'Cameras' },
-    ];
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const queries = [Query.equal('status', true)];
+        if (selectedCategory !== 'all') queries.push(Query.equal('category', selectedCategory));
+        const response = await databaseService.getProducts(queries);
+        if (response) setProducts(response.documents);
+      } catch (err) {
+        console.error('Failed to fetch products', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [selectedCategory]);
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            setLoading(true);
-            try {
-                let queries = [Query.equal('status', true)];
-                if (selectedCategory !== 'all') {
-                    queries.push(Query.equal('category', selectedCategory));
-                }
+  const categoryLabel = CATEGORIES.find((c) => c.id === selectedCategory)?.name ?? 'All';
 
-                const response = await databaseService.getProducts(queries);
-                if (response) {
-                    setProducts(response.documents);
-                }
-            } catch (error) {
-                console.error("Failed to fetch products", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+  return (
+    <div className="page-enter">
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 py-10 md:py-14">
 
-        fetchProducts();
-    }, [selectedCategory]);
-
-    return (
-        <div className="min-h-screen bg-white text-slate-900 font-sans">
-            <div className="max-w-7xl mx-auto px-6 py-12">
-                
-                {/* --- Page Header --- */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-8 border-b border-gray-100 gap-4">
-                    <div>
-                        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-                            Shop Gear
-                        </h1>
-                        <p className="text-slate-500 mt-2 font-medium">
-                            {products.length} results for "<span className="text-blue-700">{categories.find(c => c.id === selectedCategory)?.name}</span>"
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-12 lg:gap-16">
-                    
-                    {/* --- Sidebar (Filters) --- */}
-                    <div className="w-full md:w-64 shrink-0">
-                        <div className="sticky top-28">
-                            <div className="mb-6 flex items-center gap-2 text-slate-900 font-bold uppercase tracking-wider text-sm">
-                                <Filter size={16} />
-                                <h3>Filters</h3>
-                            </div>
-                            
-                            <div className="space-y-1">
-                                <ul className="space-y-2">
-                                    {categories.map((category) => (
-                                        <li key={category.id}>
-                                            <button
-                                                onClick={() => setSelectedCategory(category.id)}
-                                                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                                                    selectedCategory === category.id
-                                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                                                        : 'text-slate-600 hover:bg-gray-50 hover:text-slate-900'
-                                                }`}
-                                            >
-                                                {category.name}
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* --- Product Grid --- */}
-                    <div className="flex-1">
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center py-32 text-slate-400">
-                                <Loader className="animate-spin mb-4 text-blue-600" size={40} />
-                                <p className="font-medium">Loading gear...</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
-                                {products.length === 0 ? (
-                                    <div className="col-span-full flex flex-col items-center justify-center text-center text-slate-500 py-32 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                                        <AlertCircle size={48} className="text-slate-300 mb-4" />
-                                        <p className="text-xl font-bold text-slate-900 mb-2">No products found</p>
-                                        <p className="text-sm">Try adjusting your category filter.</p>
-                                    </div>
-                                ) : (
-                                    products.map((product) => {
-                                        const isOutOfStock = !product.quantity || product.quantity < 1;
-
-                                        return (
-                                            <Link 
-                                                to={`/product/${product.$id}`}
-                                                key={product.$id} 
-                                                className={`group relative flex flex-col bg-white rounded-2xl transition-all duration-300 ${isOutOfStock ? '' : 'hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-900/5'}`}
-                                            >
-                                                {/* Product Image */}
-                                                <div className="relative aspect-4/3 bg-gray-50 rounded-2xl overflow-hidden p-6 flex items-center justify-center border border-gray-100">
-                                                    <img 
-                                                        src={databaseService.getFileView(product.featuredImage)} 
-                                                        alt={product.name}
-                                                        className={`w-full h-full object-contain mix-blend-multiply transition-transform duration-500 ${isOutOfStock ? 'grayscale opacity-50' : 'group-hover:scale-105'}`}
-                                                    />
-                                                    {/* Stock Badge */}
-                                                    {isOutOfStock && (
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <span className="bg-slate-900/80 backdrop-blur-sm text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-widest">
-                                                                Sold Out
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                
-                                                {/* Product Info */}
-                                                <div className="pt-6 pb-2 flex flex-col flex-1 px-2">
-                                                    <div className="mb-2">
-                                                        <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1.5">
-                                                            {product.category || "Gear"}
-                                                        </p>
-                                                        <h3 className="text-lg font-bold text-slate-900 leading-tight group-hover:text-blue-700 transition-colors line-clamp-2">
-                                                            {product.name}
-                                                        </h3>
-                                                    </div>
-                                                    
-                                                    <div className="flex items-center justify-between mt-auto pt-2">
-                                                        <span className="block text-2xl font-extrabold text-slate-900">
-                                                            ${product.price}
-                                                        </span>
-                                                        <span className="text-sm font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
-                                                            View Details &rarr;
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+        {/* ── Page header ──────────────────────────────── */}
+        <div className="mb-8">
+          <p className="text-amber-600 text-sm font-bold uppercase tracking-wider mb-1">Browse</p>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <h1 className="text-4xl font-bold text-stone-900" style={{ fontFamily: 'Syne, sans-serif' }}>
+              Shop Gear
+            </h1>
+            {!loading && (
+              <p className="text-stone-400 text-sm">
+                <span className="font-semibold text-stone-700">{products.length}</span> results
+                {selectedCategory !== 'all' && (
+                  <> in <span className="text-amber-600 font-semibold">{categoryLabel}</span></>
+                )}
+              </p>
+            )}
+          </div>
         </div>
-    );
+
+        {/* ── Category filter pills ─────────────────── */}
+        <div className="flex flex-wrap gap-2 mb-8 pb-8 border-b border-stone-100">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200
+                ${selectedCategory === cat.id
+                  ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
+                  : 'bg-white text-stone-600 border-stone-200 hover:border-stone-400 hover:text-stone-900'}`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Product grid ─────────────────────────── */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center py-28 rounded-3xl bg-stone-50 border-2 border-dashed border-stone-200">
+            <PackageSearch size={52} className="text-stone-300 mb-4" />
+            <p className="text-xl font-bold text-stone-800 mb-1">No products found</p>
+            <p className="text-stone-400 text-sm mb-6">Try a different category filter.</p>
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className="px-5 py-2.5 bg-stone-900 text-white rounded-xl text-sm font-semibold"
+            >
+              Show all products
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {products.map((product) => {
+              const outOfStock = !product.quantity || product.quantity < 1;
+              return (
+                <Link
+                  key={product.$id}
+                  to={`/product/${product.$id}`}
+                  className={`group relative flex flex-col bg-white rounded-2xl border border-stone-100 overflow-hidden transition-all duration-300
+                    ${outOfStock ? 'opacity-70' : 'hover:border-amber-200 hover:shadow-xl hover:shadow-amber-900/6 hover:-translate-y-0.5'}`}
+                >
+                  {/* Image */}
+                  <div className="relative aspect-4/3 bg-stone-50 overflow-hidden p-5 flex items-center justify-center">
+                    <img
+                      src={databaseService.getFileView(product.featuredImage)}
+                      alt={product.name}
+                      className={`w-full h-full object-contain mix-blend-multiply transition-transform duration-500
+                        ${outOfStock ? 'grayscale' : 'group-hover:scale-105'}`}
+                    />
+                    {outOfStock && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
+                        <span className="bg-stone-800 text-white text-xs font-bold px-3 py-1.5 rounded-full tracking-widest uppercase">
+                          Sold out
+                        </span>
+                      </div>
+                    )}
+                    {!outOfStock && product.quantity <= 5 && (
+                      <div className="absolute top-3 left-3 bg-rose-50 text-rose-600 text-[10px] font-bold px-2.5 py-1 rounded-full border border-rose-100">
+                        Only {product.quantity} left
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-4 flex flex-col flex-1">
+                    <p className="text-[11px] font-bold text-amber-600 uppercase tracking-widest mb-1">
+                      {product.category || 'Gear'}
+                    </p>
+                    <h3 className="text-sm font-semibold text-stone-900 leading-snug line-clamp-2 group-hover:text-amber-700 transition-colors flex-1 mb-3">
+                      {product.name}
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-bold text-stone-900">${product.price}</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-stone-300 group-hover:text-amber-500 transition-colors">
+                        Details <ArrowRight size={12} />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default AllProducts;
