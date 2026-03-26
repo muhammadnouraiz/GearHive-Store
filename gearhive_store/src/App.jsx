@@ -1,12 +1,11 @@
 /* src/App.jsx */
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux'; // ✅ Added useSelector
+import { useDispatch, useSelector } from 'react-redux';
 import authService from './services/auth';
 import { login, logout } from './store/authSlice';
-import { replaceCart } from './store/cartSlice'; // ✅ Added replaceCart action
+import { replaceCart } from './store/cartSlice';
 import { Routes, Route } from 'react-router-dom';
 
-// Components & Pages
 import Navbar from './components/layout/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -19,87 +18,75 @@ import Checkout from './pages/Checkout';
 function App() {
   const [loading, setLoading] = useState(true);
   const dispatch = useDispatch();
-
-  // 1. Get User and Cart from Redux to track changes
   const userData = useSelector((state) => state.auth.userData);
   const cartItems = useSelector((state) => state.cart.items);
 
-  // 2. Auth Check (Existing)
   useEffect(() => {
     authService.getCurrentUser()
       .then((userData) => {
-        if (userData) {
-          dispatch(login(userData));
-        } else {
-          dispatch(logout());
-        }
+        if (userData) dispatch(login(userData));
+        else dispatch(logout());
       })
       .finally(() => setLoading(false));
   }, [dispatch]);
 
-  // ----------------------------------------------------
-  // 3. CART SYNC LOGIC (The Fix)
-  // ----------------------------------------------------
-
-  // A. LOAD Cart when User Changes (Login/Logout)
   useEffect(() => {
     if (!loading) {
-        // Define a unique key: 'cart_user123' or 'cart_guest'
-        const storageKey = userData ? `cart_${userData.$id}` : "cart_guest";
-        
-        // Try to find a saved cart for this specific user
-        const savedCart = localStorage.getItem(storageKey);
-        
-        if (savedCart) {
-            // If found, load it into Redux
-            dispatch(replaceCart(JSON.parse(savedCart)));
-        } else {
-            // If not found (new user), start with empty
-            dispatch(replaceCart([]));
-        }
+      const key = userData ? `cart_${userData.$id}` : 'cart_guest';
+      const saved = localStorage.getItem(key);
+      dispatch(replaceCart(saved ? JSON.parse(saved) : []));
     }
   }, [userData, loading, dispatch]);
 
-  // B. SAVE Cart whenever Items Change
   useEffect(() => {
     if (!loading) {
-        // Define the unique key again
-        const storageKey = userData ? `cart_${userData.$id}` : "cart_guest";
-        
-        // Save the current Redux cart to the browser under that key
-        localStorage.setItem(storageKey, JSON.stringify(cartItems));
+      const key = userData ? `cart_${userData.$id}` : 'cart_guest';
+      localStorage.setItem(key, JSON.stringify(cartItems));
     }
   }, [cartItems, userData, loading]);
 
-  // ----------------------------------------------------
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <p className="text-xl font-semibold text-gray-600">Loading GearHive...</p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8f7f4] gap-5">
+        {/* Animated logo mark */}
+        <div className="relative w-14 h-14">
+          <span className="absolute inset-0 rounded-2xl bg-amber-400 opacity-20 animate-ping" />
+          <span className="absolute inset-0 rounded-2xl bg-amber-400 flex items-center justify-center">
+            <span className="text-white text-2xl font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>G</span>
+          </span>
+        </div>
+        <p className="text-stone-400 text-sm tracking-widest uppercase font-medium">Loading GearHive</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      
+    <div className="min-h-screen flex flex-col bg-[#f8f7f4]">
       <Navbar />
-
       <main className="grow">
         <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/products" element={<AllProducts />} />
-            <Route path="/product/:slug" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
+          <Route path="/"               element={<Home />} />
+          <Route path="/login"          element={<Login />} />
+          <Route path="/signup"         element={<Signup />} />
+          <Route path="/products"       element={<AllProducts />} />
+          <Route path="/product/:slug"  element={<ProductDetail />} />
+          <Route path="/cart"           element={<Cart />} />
+          <Route path="/checkout"       element={<Checkout />} />
         </Routes>
       </main>
 
-      <footer className="bg-white border-t p-6 text-center text-sm text-gray-500">
-        © 2026 GearHive. All rights reserved.
+      <footer className="bg-stone-900 text-stone-400 mt-auto">
+        <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <span className="text-white text-xl font-bold" style={{ fontFamily: 'Syne, sans-serif' }}>
+            Gear<span className="text-amber-400">Hive</span>
+          </span>
+          <p className="text-sm">© 2026 GearHive. All rights reserved.</p>
+          <div className="flex gap-6 text-sm">
+            <a href="#" className="hover:text-white transition-colors">Privacy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms</a>
+            <a href="#" className="hover:text-white transition-colors">Support</a>
+          </div>
+        </div>
       </footer>
     </div>
   );
