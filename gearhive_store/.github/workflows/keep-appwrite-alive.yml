@@ -2,7 +2,7 @@ name: Appwrite Keep Alive
 on:
   schedule:
     - cron: '0 0 */4 * *' # Runs at midnight every 4 days
-  workflow_dispatch: # Allows manual testing from the GitHub UI
+  workflow_dispatch: 
 
 jobs:
   ping:
@@ -10,5 +10,5 @@ jobs:
     steps:
       - name: Ping Appwrite Database
         run: |
-          curl -X GET "https://cloud.appwrite.io/v1/databases/${{ secrets.VITE_APPWRITE_DATABASE_ID }}/collections/${{ secrets.VITE_APPWRITE_COLLECTION_ID }}/documents" \
+          curl -X GET "${{ secrets.VITE_APPWRITE_URL }}/databases/${{ secrets.VITE_APPWRITE_DATABASE_ID }}/collections/${{ secrets.VITE_APPWRITE_COLLECTION_PRODUCTS }}/documents" \
           -H "X-Appwrite-Project: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}"
